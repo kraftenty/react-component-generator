@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { validatePromptLength, MAX_PROMPT_LENGTH } from '../utils/validatePrompt';
 
 interface PromptInputProps {
   onGenerate: (prompt: string) => void;
@@ -16,10 +17,12 @@ const EXAMPLES = [
 
 export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
   const [prompt, setPrompt] = useState('');
+  const validation = validatePromptLength(prompt);
+  const canSubmit = validation.length > 0 && validation.valid && !isLoading;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (prompt.trim() && !isLoading) {
+    if (canSubmit) {
       onGenerate(prompt.trim());
     }
   };
@@ -41,18 +44,32 @@ export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
           className="prompt-textarea"
           aria-label="컴포넌트 요청"
           rows={4}
+          aria-invalid={!validation.valid}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               handleSubmit(e);
             }
           }}
         />
+        <div className="prompt-meta">
+          {validation.error && (
+            <p role="alert" className="prompt-error">
+              {validation.error}
+            </p>
+          )}
+          <span
+            className={`prompt-counter ${validation.valid ? '' : 'prompt-counter--over'}`}
+            aria-live="off"
+          >
+            {validation.length} / {MAX_PROMPT_LENGTH}
+          </span>
+        </div>
         <div className="prompt-actions">
           <span className="prompt-hint">⌘ 또는 Ctrl + Enter로도 생성할 수 있어요.</span>
           <button
             type="submit"
             className="btn-generate"
-            disabled={!prompt.trim() || isLoading}
+            disabled={!canSubmit}
           >
             {isLoading ? (
               <span className="loading-spinner">생성 중...</span>
